@@ -137,6 +137,7 @@ echo "http://$(kubectl -n rook-ceph -o jsonpath={.status.hostIP} get pod prometh
 monitoring会部署服务并且自带默认的监控报警规则，可以直接参考使用，官方还提供3个grafana的dashboard，直接导入配置好数据元就可以了
 
 配置数据源并导入官方提供的dashboard
+
 * [Ceph - Cluster](https://grafana.com/dashboards/2842)
 * [Ceph - OSD](https://grafana.com/dashboards/5336)
 * [Ceph - Pools](https://grafana.com/dashboards/5342)
