@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+  <head>
+  <meta http-equiv="content-type" content="text/html;charset=utf-8">
+  <meta http-equiv="X-UA-Compatible" content="chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noodp"/>
+  <meta name="author" content="feifeigood">
+  
+  
+  
+  
+  
+  <link rel="canonical" href="https://feifeigood.github.io/2020/rook-ceph-in-k8s/" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
+  <meta name="msapplication-TileColor" content="#da532c">
+  <meta name="theme-color" content="#ffffff">
+  <title>
+       
+       
+           使用rook在kubernetes集群上部署ceph集群 | feifeigood&#39;s Blog
+       
+  </title>
+  <meta name="title" content="使用rook在kubernetes集群上部署ceph集群 | feifeigood&#39;s Blog">
+    
+  
+  <link rel="stylesheet" href="/font/iconfont.css">
+  <link rel="stylesheet" href="/css/main.min.css">
+
+
+  
+  
+ 
+
+<script type="application/ld+json">
+ "@context" : "http://schema.org",
+    "@type" : "BlogPosting",
+    "mainEntityOfPage": {
+         "@type": "WebPage",
+         "@id": "https:\/\/feifeigood.github.io"
+    },
+    "articleSection" : "posts",
+    "name" : "使用rook在kubernetes集群上部署ceph集群",
+    "headline" : "使用rook在kubernetes集群上部署ceph集群",
+    "description" : "rook是基于kubernetes的一个开源的云原生存储部署项目，它也是CNCF的首个云原生存储项目，提供了在kubernetes集群上部署",
+    "inLanguage" : "zh-cn",
+    "author" : "feifeigood",
+    "creator" : "feifeigood",
+    "publisher": "feifeigood",
+    "accountablePerson" : "feifeigood",
+    "copyrightHolder" : "feifeigood",
+    "copyrightYear" : "2020",
+    "datePublished": "2020-01-16 22:55:25 \x2b0800 CST",
+    "dateModified" : "2020-01-16 22:55:25 \x2b0800 CST",
+    "url" : "https:\/\/feifeigood.github.io\/2020\/rook-ceph-in-k8s\/",
+    "wordCount" : "1996",
+    "keywords" : [ "k8s","ceph","rook", "feifeigood\x27s Blog"]
+}
+</script>
+
+</head>
+
+  
+
+
+  <body class="">
+    <div class="wrapper">
+        <nav class="navbar">
+    <div class="container">
+        <div class="navbar-header header-logo">
+        	<a href="javascript:void(0);" class="theme-switch"><i class="iconfont icon-xihuan"></i></a>&nbsp;<a href="https://feifeigood.github.io">feifeigood&#39;s Blog</a>
+        </div>
+        <div class="menu navbar-right">
+                
+                
+                <a class="menu-item" href="/posts/" title="">Blog</a>
+                
+                <a class="menu-item" href="/categories/" title="">Categories</a>
+                
+                <a class="menu-item" href="/tags/" title="">Tags</a>
+                
+                <a class="menu-item" href="/about/" title="">About</a>
+                
+        </div>
+    </div>
+</nav>
+<nav class="navbar-mobile" id="nav-mobile" style="display: none">
+     <div class="container">
+        <div class="navbar-header">
+            <div>  <a href="javascript:void(0);" class="theme-switch"><i class="iconfont icon-xihuan"></i></a>&nbsp;<a href="https://feifeigood.github.io">feifeigood&#39;s Blog</a></div>
+            <div class="menu-toggle">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+     
+          <div class="menu" id="mobile-menu">
+                
+                
+                <a class="menu-item" href="/posts/" title="">Blog</a>
+                
+                <a class="menu-item" href="/categories/" title="">Categories</a>
+                
+                <a class="menu-item" href="/tags/" title="">Tags</a>
+                
+                <a class="menu-item" href="/about/" title="">About</a>
+                
+        </div>
+    </div>
+</nav>
+    	 <main class="main">
+          <div class="container">
+      		
+<article class="post-warp" itemscope itemtype="http://schema.org/Article">
+    <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">使用rook在kubernetes集群上部署ceph集群</h1>
+        <div class="post-meta">
+                Written by <a itemprop="name" href="https://feifeigood.github.io" rel="author">feifeigood</a> with ♥ 
+                <span class="post-time">
+                on <time datetime=2020-01-16 itemprop="datePublished">January 16, 2020</time>
+                </span>
+                in
+                <i class="iconfont icon-folder"></i>
+                <span class="post-category">
+                        <a href="https://feifeigood.github.io/categories/kubernetes%E5%AE%9E%E8%B7%B5/"> kubernetes实践 </a>
+                        
+                </span>
+        </div>
+    </header>
+    <div class="post-content">
+        
+
+        
+            
+        
+
+        
+        
+     
+          
+          
+          
+
+          
+          
+          
+
+          <p><a href="https://github.com/rook/rook">rook</a>是基于kubernetes的一个开源的云原生存储部署项目，它也是CNCF的首个云原生存储项目，提供了在kubernetes集群上部署ceph这类经过实际测试的成熟存储集群的解决方案</p>
+<h2 id="环境准备">环境准备</h2>
+<p>使用rook在kubernetes集群上部署有几个前置条件</p>
+<ul>
+<li>kubernetes集群版本大于v1.10或更高 =&gt; 本文环境使用当前的最新版本v1.17</li>
+<li>ceph存储默认是3个副本，正式使用集群节点数不要小于3</li>
+<li>存储节点的内核版本推荐要高于4.17，否则PVC的容量限额无效</li>
+<li>存储节点的内核要确认加载rdb模块</li>
+<li>存储节点需要安装lvm2，rook需要它做磁盘管理</li>
+<li>rook的operator需要cluster-admin集群角色</li>
+</ul>
+<p>本文中使用的rook版本是1.18，最新的1.2版本没有能够部署成功</p>
+<h2 id="清理存储节点">清理存储节点</h2>
+<p>rook在部署ceph之前会对存储节点上的硬盘做一次可用性检查，如果硬盘不可用rook会跳过对该硬盘的处理，需要先格式化一下盘</p>
+<pre><code class="language-code" data-lang="code"># 使用sgdisk命令清理硬盘 yum install -y gdisk 对需要清理数据的盘都做一下处理
+sgdisk --zap-all /dev/sdb
+# 如果以前使用rook安装过需要执行以下步骤
+ls /dev/mapper/ceph-* | xargs -I% -- dmsetup remove %
+rm -rf /dev/ceph-*
+# 删除以前残留的配置
+rm -rf /var/lib/rook
+</code></pre><h2 id="部署ceph">部署ceph</h2>
+<pre><code class="language-code" data-lang="code"># 从github上下载1.18版本安装包
+wget https://github.com/rook/rook/archive/v1.1.8.tar.gz
+tar -xzvf v1.1.8.tar.gz
+# 使用官方写好的部署脚本
+cd rook-1.1.8/cluster/examples/kubernetes/ceph/
+# 部署rook operator
+kubectl create -f common.yaml
+kubectl create -f operator.yaml
+</code></pre><p>部署完成operator后会启动除了operator的pod之外还会在每个节点上启动一个discover的pod来收集存储节点信息。可以通过这些pod的输出看到存储节点是否符合预期不符合预期及时调整</p>
+<pre><code class="language-code" data-lang="code">kubectl get pod -nrook-ceph
+NAME                                  READY   STATUS    RESTARTS   AGE
+rook-ceph-operator-6fcb8756dc-lc9cc   1/1     Running   0          31m
+rook-discover-mdt7s                   1/1     Running   0          30m
+rook-discover-qkddw                   1/1     Running   0          30m
+rook-discover-ssz8k                   1/1     Running   0          30m
+</code></pre><p>部署ceph集群前cluster.yaml中有一些部分需要按照我们的需求修改</p>
+<pre><code class="language-code" data-lang="code">...
+  # storage这个配置块需要修改一下 按照自己的需求配置指定使用的节点和盘或者使用deviceFilter来通配盘符 具体配置可以看官方链接 
+  # https://rook.io/docs/rook/v1.1/ceph-cluster-crd.html#storage
+  storage: # cluster level storage configuration and selection
+    useAllNodes: true
+    useAllDevices: true
+    topologyAware: true
+    deviceFilter:
+    location:
+    config:
+      # The default and recommended storeType is dynamically set to bluestore for devices and filestore for directories.
+      # Set the storeType explicitly only if it is required not to use the default.
+      # storeType: bluestore
+      # metadataDevice: &quot;md0&quot; # specify a non-rotational storage so ceph-volume will use it as block db device of bluestore.
+      # databaseSizeMB: &quot;1024&quot; # uncomment if the disks are smaller than 100 GB
+      # journalSizeMB: &quot;1024&quot;  # uncomment if the disks are 20 GB or smaller
+      # osdsPerDevice: &quot;1&quot; # this value can be overridden at the node or device level
+      # encryptedDevice: &quot;true&quot; # the default value for this option is &quot;false&quot;
+# Cluster level list of directories to use for filestore-based OSD storage. If uncomment, this example would create an OSD under the dataDirHostPath.
+    #directories:
+    #- path: /var/lib/rook
+# Individual nodes and their config can be specified as well, but 'useAllNodes' above must be set to false. Then, only the named
+# nodes below will be used as storage resources.  Each node's 'name' field should match their 'kubernetes.io/hostname' label.
+#    nodes:
+#    - name: &quot;172.17.4.101&quot;
+#      directories: # specific directories to use for storage can be specified for each node
+#      - path: &quot;/rook/storage-dir&quot;
+#      resources:
+#        limits:
+#          cpu: &quot;500m&quot;
+#          memory: &quot;1024Mi&quot;
+#        requests:
+#          cpu: &quot;500m&quot;
+#          memory: &quot;1024Mi&quot;
+#    - name: &quot;172.17.4.201&quot;
+#      devices: # specific devices to use for storage can be specified for each node
+#      - name: &quot;sdb&quot;
+#      - name: &quot;nvme01&quot; # multiple osds can be created on high performance devices
+#        config:
+#          osdsPerDevice: &quot;5&quot;
+#      config: # configuration can be specified at the node level which overrides the cluster level config
+#        storeType: filestore
+#    - name: &quot;172.17.4.301&quot;
+#      deviceFilter: &quot;^sd.&quot;
+...
+</code></pre><p>修改完成后部署集群</p>
+<pre><code class="language-code" data-lang="code">kubectl create -f cluster.yaml
+</code></pre><p>部署cluster.yaml之后，operator会执行如下步骤</p>
+<ul>
+<li>使用DaemonSet模式创建ceph-mon的pod</li>
+<li>创建一个ceph-mgr的pod</li>
+<li>在存储节点上执行osd创建前准备任务 =&gt; 初始化被选中的硬盘</li>
+<li>为每块盘创建osd进程</li>
+</ul>
+<h2 id="开启dashboard">开启dashboard</h2>
+<p>ceph集群自带了dashboard，在cluster.yaml中配置默认是开启的，默认没有对公网开放访问</p>
+<pre><code class="language-code" data-lang="code"># enable the ceph dashboard for viewing cluster status
+dashboard:
+enabled: true
+</code></pre><p>如果要在公网能够访问这个dashboard还需要部署下dashboard-external-https.yaml来开启nodeport模式提供访问</p>
+<pre><code class="language-code" data-lang="code"># 获取默认dashboard的admin密码
+kubectl -n rook-ceph get secret rook-ceph-dashboard-password -o jsonpath=&quot;{['data']['password']}&quot; | base64 --decode &amp;&amp; echo
+</code></pre><p>效果图如下
+<img src="https://raw.githubusercontent.com/feifeigood/blog-images/master/img/20200117152627.png" alt=""></p>
+<h2 id="使用官方提供的监控包">使用官方提供的监控包</h2>
+<p>rook官方提供基于coreos开源的prometheus operator来部署prometheus监控服务（现在prometheus-operator已经合并到另一个项目kube-prometheus中），在已经部署了prometheus-operator和grafana的基础上使用官方写好的部署脚本</p>
+<pre><code class="language-code" data-lang="code"># cluster/examples/kubernetes/ceph/monitoring 整个目录部署
+kubectl create -f monitoring/
+# 获取prometheus服务的访问地址，使用的nodeport模式
+echo &quot;http://$(kubectl -n rook-ceph -o jsonpath={.status.hostIP} get pod prometheus-rook-prometheus-0):30900&quot;
+</code></pre><p>monitoring会部署服务并且自带默认的监控报警规则，可以直接参考使用，官方还提供3个grafana的dashboard，直接导入配置好数据元就可以了</p>
+<p>配置数据源并导入官方提供的dashboard</p>
+<ul>
+<li><a href="https://grafana.com/dashboards/2842">Ceph - Cluster</a></li>
+<li><a href="https://grafana.com/dashboards/5336">Ceph - OSD</a></li>
+<li><a href="https://grafana.com/dashboards/5342">Ceph - Pools</a></li>
+</ul>
+<p>效果图
+<img src="https://raw.githubusercontent.com/feifeigood/blog-images/master/img/20200117155106.png" alt="">
+<img src="https://raw.githubusercontent.com/feifeigood/blog-images/master/img/20200117155516.png" alt=""></p>
+<h2 id="部署toolbox通过命令行来操作ceph集群">部署toolbox通过命令行来操作ceph集群</h2>
+<p>rook还提供一个toolbox容器来提供命令行的方式管理集群</p>
+<pre><code class="language-code" data-lang="code"># 部署toolbox
+kubectl create -f toolbox.yaml
+# 直接进入容器命令
+kubectl -n rook-ceph exec -it $(kubectl -n rook-ceph get pod -l &quot;app=rook-ceph-tools&quot; -o jsonpath='{.items[0].metadata.name}') bash
+</code></pre><p>在toolbox中我们可以使用ceph的命令来排查ceph集群的问题</p>
+<h2 id="总结">总结</h2>
+<p>ceph是一款在生产环境中经过考验的开源存储系统，同时支持Block Storage、Object Storage、Shared Filesystem，ceph本身的搭建是比较复杂的，rook直接简化了ceph的部署过程使我们在kubernetes集群上实现快速部署</p>
+
+    </div>
+
+    <div class="post-copyright">
+             
+            <p class="copyright-item">
+                <span>Author:</span>
+                <span>feifeigood </span>
+                </p>
+            
+           
+             
+            <p class="copyright-item">
+                    <span>Link:</span>
+                    <a href=https://feifeigood.github.io/2020/rook-ceph-in-k8s/>https://feifeigood.github.io/2020/rook-ceph-in-k8s/</span>
+            </p>
+            
+             
+            <p class="copyright-item lincese">
+                本文采用<a rel="license" href="http://creativecommons.org/licenses/by-nc/4.0/" target="_blank">知识共享署名-非商业性使用 4.0 国际许可协议</a>进行许可
+            </p>
+            
+    </div>
+
+  
+    <div class="post-tags">
+        
+            <section>
+            <i class="iconfont icon-tag"></i>Tag(s): 
+            
+            <span class="tag"><a href="https://feifeigood.github.io/tags/k8s/">
+                    #k8s</a></span>
+            
+            <span class="tag"><a href="https://feifeigood.github.io/tags/ceph/">
+                    #ceph</a></span>
+            
+            <span class="tag"><a href="https://feifeigood.github.io/tags/rook/">
+                    #rook</a></span>
+            
+            </section>
+        
+        <section>
+                <a href="javascript:window.history.back();">back</a></span> · 
+                <span><a href="https://feifeigood.github.io">home</a></span>
+        </section>
+    </div>
+
+    <div class="post-nav">
+         
+        
+    </div>
+
+    <div class="post-comment">
+          
+                 
+          
+    </div>
+</article>
+          </div>
+		   </main>
+      <footer class="footer">
+    <div class="copyright">
+        &copy;
+        
+        <span itemprop="copyrightYear">2019 - 2020</span>
+        
+        <span class="with-love">
+    	 <i class="iconfont icon-love"></i> 
+         </span>
+         
+            <span class="author" itemprop="copyrightHolder"><a href="https://feifeigood.github.io">feifeigood</a> | </span> 
+         
+
+         
+		  <span>Powered by <a href="https://gohugo.io/" target="_blank" rel="external nofollow">Hugo</a> & <a href="https://github.com/liuzc/leaveit" target="_blank" rel="external nofollow">LeaveIt</a></span> 
+    </div>
+</footer>
+
+
+
+
+
+
+
+
+
+
+
+
+    
+     <link href="//lib.baomitu.com/lightgallery/1.6.11/css/lightgallery.min.css" rel="stylesheet">  
+      
+     <script src="/js/vendor_gallery.min.js" async="" ></script>
+    
+  
+
+
+
+     </div>
+  </body>
+</html>
