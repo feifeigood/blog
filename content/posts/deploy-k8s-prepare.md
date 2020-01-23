@@ -1,7 +1,7 @@
 ---
 title: "手动搭建kubernetes集群系列-(1)安装准备"
 date: 2020-01-23T15:32:25+08:00
-draft: true
+draft: false
 tags: ["k8s","部署k8s"]
 categories: ["kubernetes实践"]
 ---
