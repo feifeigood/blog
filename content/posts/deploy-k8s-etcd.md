@@ -1,5 +1,5 @@
 ---
-title: "手动搭建kubernetes集群系列-(2)部署高可用ETCD集群"
+title: "手动搭建kubernetes集群系列-(2)部署高可用etcd集群"
 date: 2020-01-30T10:54:14+08:00
 draft: false
 tags: ["k8s","部署k8s"]
