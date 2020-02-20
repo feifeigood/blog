@@ -66,6 +66,26 @@ cfssl gencert -ca=ca.pem -ca-key=ca-key.pem -config=ca-config.json -profile=kube
 ```
 创建完证书后将生成的*.pem文件全部复制到`/etc/kubernetes/ssl`目录下，后续启动服务需要配置这些证书
 
+## 创建kubeconfig配置文件
+使用kubectl来连接集群必须要配置好集群认证信息
+```code
+# 设置集群参数 k8s-example-01 是集群的名称 https://192.168.0.1:6443 是集群master主机的地址api接口 根据具体集群动态来生成
+[root@192.168.0.1 ~]# kubectl config set-cluster k8s-example-01 --certificate-authority=/etc/kubernetes/ssl/ca.pem --embed-certs=true --server=https://192.168.0.1:6443
+Cluster "k8s-example-01" set.
+# 设置客户端认证参数
+[root@192.168.0.1 ~]# kubectl config set-credentials admin --client-certificate=/etc/kubernetes/ssl/admin.pem --embed-certs=true --client-key=/etc/kubernetes/ssl/admin-key.pem 
+User "admin" set.
+# 设置上下文参数 文格式用 context-集群名称-用户名 可读性好
+[root@192.168.0.1 ~]# kubectl config set-context context-k8s-example-01-admin --cluster=k8s-example-01 --user=admin
+Context "context-k8s-example-01-admin" created.
+# 设置默认上下文
+[root@192.168.0.1 ~]# kubectl config use-context context-k8s-example-01-admin
+Switched to context "context-k8s-example-01-admin".
+# 上面命令执行完成会生成配置文件在~/.kube/config 这个配置文件具有对集群控制的最高权限，要妥善保管
+[root@192.168.0.1 ~]# ls ~/.kube/config 
+/root/.kube/config
+```
+
 ## 安装master节点组件
 选择当前最新稳定版本v1.17，[官方下载地址](https://kubernetes.io/docs/setup/release/notes/)选择kubernetes-server-linux-amd64.tar.gz
 ```code
@@ -199,7 +219,7 @@ systemctl status kube-apiserver
 # Add your own!
 KUBE_CONTROLLER_MANAGER_ARGS="--address=127.0.0.1 \
 --service-cluster-ip-range=10.254.0.0/16 \
---cluster-name=k8s-gdfs-01 \
+--cluster-name=k8s-example-01 \
 --cluster-signing-cert-file=/etc/kubernetes/ssl/ca.pem \
 --cluster-signing-key-file=/etc/kubernetes/ssl/ca-key.pem \
 --service-account-private-key-file=/etc/kubernetes/ssl/ca-key.pem \
