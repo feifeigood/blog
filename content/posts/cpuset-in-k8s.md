@@ -1,6 +1,6 @@
 ---
 title: "kubernetes启用cpuset来进行CPU独占分配"
-date: 2020-04-04T10:54:14+08:00
+date: 2020-04-03T10:54:14+08:00
 draft: false
 tags: ["k8s","cpu-manager"]
 categories: ["kubernetes实践"]
